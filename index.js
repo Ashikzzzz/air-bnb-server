@@ -14,6 +14,7 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.0zgm21v.mongodb.net/?retryWrites=true&w=majority`;
 console.log(uri);
+// console.log("object");
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -24,13 +25,15 @@ async function run() {
   try {
     const homesCollection = client.db("air-bnb").collection("homes");
     const usersCollection = client.db("air-bnb").collection("users");
+    const bookingsCollection = client.db("air-bnb").collection("bookings");
+    // console.log("first");
 
     // save user email and generate jwt
     app.put("/user/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email);
+      console.log("email", email);
       const user = req.body;
-      console.log(user);
+      console.log("user info", user);
       const filter = { email: email };
       const options = { upsert: true };
       const updatedDoc = {
@@ -46,6 +49,15 @@ async function run() {
       });
       console.log(token);
       res.send({ result, token });
+    });
+
+    // save booking data
+    app.post("/bookings", async (req, res) => {
+      const bookings = req.body;
+      console.log(bookings);
+      const result = await bookingsCollection.insertOne(bookings);
+      console.log(result);
+      res.send(result);
     });
   } finally {
   }
