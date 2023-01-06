@@ -59,6 +59,27 @@ async function run() {
       console.log(result);
       res.send(result);
     });
+
+    // get booking user specified data
+    app.get("/bookings", async (req, res) => {
+      let query = {};
+      const email = req.query.email;
+      if (email) {
+        query = {
+          guestEmail: email,
+        };
+      }
+      const bookings = await bookingsCollection.find(query).toArray();
+      console.log(bookings);
+      res.send(bookings);
+    });
+
+    // app.get("/bookings", async (req, res) => {
+    //   console.log(req.query);
+    //   const query = {};
+    //   const cursor = await bookingsCollection.find(query).toArray();
+    //   res.send(cursor);
+    // });
   } finally {
   }
 }
