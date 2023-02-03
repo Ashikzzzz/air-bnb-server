@@ -2,7 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const nodemailer = require("nodemailer");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
 
@@ -51,12 +52,60 @@ async function run() {
       res.send({ result, token });
     });
 
+    // send email for booking
+    const sendEmail = (emailData, email) => {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.Email,
+          pass: process.env.Password,
+        },
+      });
+      const mailOptions = {
+        from: process.env.Email,
+        to: email,
+        subject: emailData?.subject,
+        html: `<p>${emailData?.message}</p>`,
+      };
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          console.log(error);
+        } else {
+          console.log("Email sent: " + info.response);
+          // do something useful
+        }
+      });
+    };
+
+    // get a single user by email
+    app.get("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      console.log(user.role);
+      res.send(user);
+    });
+
+    // get all user
+    app.get("/users", async (req, res) => {
+      const query = {};
+      const users = await usersCollection.find(query).toArray();
+      res.send(users);
+    });
+
     // save booking data
     app.post("/bookings", async (req, res) => {
       const bookings = req.body;
       console.log(bookings);
       const result = await bookingsCollection.insertOne(bookings);
       console.log(result);
+      sendEmail(
+        {
+          subject: "booking successful",
+          message: `Booking ID:${result?.insertedId}`,
+        },
+        bookings?.guestEmail
+      );
       res.send(result);
     });
 
@@ -73,13 +122,38 @@ async function run() {
       console.log(bookings);
       res.send(bookings);
     });
+    // get all booking data
+    app.get("/bookings", async (req, res) => {
+      console.log(req.query);
+      const query = {};
+      const cursor = await bookingsCollection.find(query).toArray();
+      res.send(cursor);
+    });
 
-    // app.get("/bookings", async (req, res) => {
-    //   console.log(req.query);
-    //   const query = {};
-    //   const cursor = await bookingsCollection.find(query).toArray();
-    //   res.send(cursor);
-    // });
+    // add a home
+    app.post("/homes", async (req, res) => {
+      const homes = req.body;
+      console.log(homes);
+      const result = await homesCollection.insertOne(homes);
+      console.log(result);
+      res.send(result);
+    });
+
+    // get all home
+    app.get("/homes", async (req, res) => {
+      const query = {};
+      const cursor = await homesCollection.find(query).toArray();
+      res.send(cursor);
+    });
+
+    // get a single home
+    app.get("/home/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const home = await homesCollection.findOne(query);
+      console.log(home);
+      res.send(home);
+    });
   } finally {
   }
 }
